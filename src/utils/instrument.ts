@@ -31,19 +31,29 @@ function instrumentType(type:InstrumentHandlerType):void{
 }
 
 
-function triggerHandlers(msg:any,url:any,row:any,line:any,error:any){
+function triggerHandlers(type:InstrumentHandlerType,data:any):void{
+    if(!type || !handlers[type])return;
+    for(const handler of handlers[type] || []){
+        try{
+            handler && handler(data);
+        }catch(ex){
 
+        }
+    }
 }
 let _originOnError:OnErrorEventHandler=null;
 function instrumentError():void{
     _originOnError=window.onerror;
     window.onerror=function(msg:any,url:any,row:any,line:any,error:any):boolean{
         triggerHandlers(
-            msg,
-            url,
-            row,
-            line,
-            error
+            'error',
+            {
+                msg,
+                url,
+                row,
+                line,
+                error
+            }
         );
         if(_originOnError){
            return _originOnError.apply(this,arguments);
@@ -51,6 +61,11 @@ function instrumentError():void{
         return false;
     }
 }
-function instrumentUnHandledRejection(){
+let _originUnHandledRejection=null;
+function instrumentUnHandledRejection():void{
+    _originUnHandledRejection=window.onunhandledrejection;
 
+    window.onunhandledrejection=function(e:any):boolean{
+
+    }
 }
