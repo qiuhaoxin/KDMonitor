@@ -1,31 +1,40 @@
-interface KDMonitorOption{
 
-}
-
+import {Options as KDMonitorOption} from './types/index';
+import BrowserClient from './client/BrowserClient';
+import GlobalHandler from './integrations/globalHandler';
+import TryCatch from './integrations/trycatch';
+const defaultIntegrations=[
+    new GlobalHandler(),
+    new TryCatch()
+]
 const DEFAULT_OPTIONS:{
     [index : string]:any,
 }={
-    server_url:'',//要上报的地址
+    url:'',//要上报的地址
+    enabled:true,
     frameWork:'',//支持的框架
+    defaultIntegrations
+    
+}
+import {getCurrentHub} from './hub'
+import {Hub} from './types/index'
+export function init(options:KDMonitorOption){
+    console.log("KDMonitor init!!!");
+    const _options:KDMonitorOption={
+        ...DEFAULT_OPTIONS,
+        ...options,
+    }
+    const hub=getCurrentHub();
+    hub.bindClient(new BrowserClient(_options))
+}
+
+function callOnHub(method:string){
+    const hub:Hub=getCurrentHub();
+}
+export function captureError():void{
 
 }
 
-class KDMonitor{
-    private options:KDMonitorOption;
-    constructor(options:KDMonitorOption){
-        this.options=options;
-    }
-    private static isInit=false;
-    public static init(options:KDMonitorOption){
-        console.log("KDMonitor init options is ",options);
-        if(KDMonitor.isInit){
-            console.error("只能初始化一次!");
-            return;
-        }
-        KDMonitor.isInit=true;
-        const kdMonitor:KDMonitor=new KDMonitor(options);
-        
-    }
-}
+export function captureMessage(message:string):void{
 
-export default KDMonitor;
+}

@@ -1,7 +1,7 @@
 
 
 import {Integration,GlobalHandlerOptions} from '../types/index';
-
+import {addInstrumentHandler} from '../utils/instrument'
 export default class GlobalHandler implements Integration{
     public static id:string="global_handler";
     private readonly _options:GlobalHandlerOptions;
@@ -26,12 +26,23 @@ export default class GlobalHandler implements Integration{
     }
     private _initOnErrorHandler():void{
         if(this._isOnErrorHandlerInstalled)return;
+        addInstrumentHandler({
+            callback:function(data:any){
+                console.log("error is ",data);
+            },
+            type:'error',
+        })
         this._isOnErrorHandlerInstalled=true;
 
     }
     private _initOnUnHandledRejection():void{
         if(this._isOnUnHandledRejectionInstalled)return;
         this._isOnUnHandledRejectionInstalled=true;
-
+        addInstrumentHandler({
+            callback:function(data:any){
+                console.log("unhandledrejection is ",data)
+            },
+            type:'unhandledrejection',
+        })
     }
 }

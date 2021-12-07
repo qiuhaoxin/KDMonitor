@@ -1,3 +1,1 @@
-import KDMonitor from './KDMonitor';
-
-export default KDMonitor;
+export * from './KDMonitor'
