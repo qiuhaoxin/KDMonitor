@@ -85,7 +85,6 @@ export function fill(source:{[key:string]:any},method:string,replacementFactory:
     const originMethod=source[method] as ()=>any;
 
     const wrapped=replacementFactory(originMethod) as WrappedFunction;
-
     if(typeof wrapped=='function'){
         try{
             wrapped.prototype=wrapped.prototype || {};
@@ -125,12 +124,56 @@ export function wrap(
     const kdMonitorWrapped:WrappedFunction=function(this:any):void{
         const args=Array.prototype.slice.call(arguments);
         try{
+            console.log("arg is ",args);
             const wrappedArguments=args.map((arg:any)=>wrap(arg,options));
+            console.log("wrappedArguments is ",wrappedArguments);
             return fn.apply(this,wrappedArguments);
         }catch(e){
-            console.log("捕获异常!");
+            console.log("捕获异常!",e);
         }
     }
+    try{
+        for(let prop in fn){
+            if(Object.prototype.hasOwnProperty.call(fn,prop)){
+                kdMonitorWrapped[prop]=fn[prop];
+            }
+        }
+    }catch(_o){
+
+    }
+    fn.prototype=fn.prototype||{};
+    kdMonitorWrapped.prototype=fn.prototype;
+
+    Object.defineProperty(fn,'__KDMonitor_wrapped__',{
+        value:kdMonitorWrapped,
+        enumerable:false,  
+    })
+    Object.defineProperties(kdMonitorWrapped,{
+        __KDMonitor__:{
+            value:true,
+            enumerable:false,
+        },
+        __KDMonitor_original__:{
+            value:fn,
+            enumerable:false,
+        }
+    })
+
+    try{
+        const nameDecorator=Object.getOwnPropertyDescriptor(kdMonitorWrapped,'name') as PropertyDescriptor;
+        if(nameDecorator.configurable){ //configurable  PropertyDescriptor
+            Object.defineProperty(
+                kdMonitorWrapped,
+                'name',
+                {
+                    get(){
+                        return fn.name;
+                    }
+                }
+            )
+        }
+
+    }catch(_O){}
     return kdMonitorWrapped;
 
 }

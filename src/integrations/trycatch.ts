@@ -3,6 +3,9 @@
 import {EventProcessor, Hub, Integration} from '../types/index'
 import { getGlobalObject } from '../utils/global';
 import {fill,wrap} from '../utils/instrument';
+
+
+type XMLHttpRequestProp= 'onload' | 'onerror' | 'onreadystatechange' | 'onprogress';
 interface TryCatchOptions{
     setTimeout?:boolean;
     setInterval?:boolean;
@@ -26,21 +29,42 @@ export default class TryCatch implements Integration{
 
     }
     public setupOnce(): void {
-        const global=getGlobalObject();
+        const global=getGlobalObject() as {[key:string]:any};
         if(this._options.setTimeout){
             fill(global,'setTimeout',this._wrappedTimeout.bind(this));
         }
         if(this._options.setInterval){
             fill(global,'setInterval',this._wrappedTimeout.bind(this));
         }
-        if(this._options.XMLHttpRequest){
-            
+        if(this._options.XMLHttpRequest && 'XMLHttpRequest' in global){
+            console.log("test !!!");
+            fill(XMLHttpRequest.prototype,'send',this._wrappedXHR.bind(this))
         }
         if(this._options.requestAnimationFrame){
             fill(global,'requestAnimationFrame',this._wrapRAF.bind(this));
         }
         if(this._options.eventTarget){
 
+        }
+    }
+    private _wrappedXHR(originSend:()=>any):()=>void{
+        console.log("wrappedXHR !!");
+        return function(this:XMLHttpRequest,...args:any[]):void{
+
+            const xhr=this;
+            const xhrProps : XMLHttpRequestProp[]=['onload','onerror','onprogress','onreadystatechange'];
+            xhrProps.forEach((xhrProp:XMLHttpRequestProp)=>{
+                console.log("xhrProp is ",xhrProp);
+                fill(xhr,xhrProp,function(origin:()=>any){
+
+                    const wrapOptions={
+
+                    }
+
+                    return wrap(origin,wrapOptions)
+                })
+            })
+            return originSend.apply(this,args);
         }
     }
     private _wrappedTimeout(origin:()=>any):()=>number{
