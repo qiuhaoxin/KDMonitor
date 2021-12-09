@@ -5,9 +5,10 @@ export interface InstrumentHandler{
 }
 
 import {WrappedFunction} from '../types/index';
+import { getGlobalObject } from './global';
 
 type InstrumentCallback=(data:any)=>void;
-type InstrumentHandlerType='error' | 'unhandledrejection' | 'dom' | 'console';
+type InstrumentHandlerType='error' | 'unhandledrejection' | 'dom' | 'console' | 'xhr';
 
 const handlers:{[key in InstrumentHandlerType]?:InstrumentCallback[]}={};
 const instrumented:{[key in InstrumentHandlerType]? : boolean}={};
@@ -29,8 +30,39 @@ function instrumentType(type:InstrumentHandlerType):void{
         case 'unhandledrejection':
             instrumentUnHandledRejection();
         break;
+        case 'console':
+            instrumentConsole();
+        break;
+        case 'xhr':
+            instrumentXHR();
+        break;
     }
 }
+
+function instrumentXHR(){
+    
+}
+
+function instrumentConsole(){
+    const global=getGlobalObject() as {[key:string]:any};
+    if(!('console' in global)){
+        return ;
+    }
+    ['info','error','assert','warn','debug'].forEach((consoleType:string)=>{
+        fill(global.console,consoleType,function(originalCallback:()=>any):Function{
+            return function(
+                ...args:any[]
+            ){
+                triggerHandlers('console',{args,level:consoleType})
+                if(originalCallback){
+                    Function.prototype.apply.call(originalCallback,global.console,args);
+                }
+            }
+        })
+    })
+}
+
+
 
 
 function triggerHandlers(type:InstrumentHandlerType,data:any):void{
