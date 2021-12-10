@@ -3,9 +3,11 @@ import {Options as KDMonitorOption} from './types/index';
 import BrowserClient from './client/BrowserClient';
 import GlobalHandler from './integrations/globalHandler';
 import TryCatch from './integrations/trycatch';
+import TimeLine from './integrations/timeline';
 const defaultIntegrations=[
     new GlobalHandler(),
-    new TryCatch()
+    new TryCatch(),
+    new TimeLine(),
 ]
 const DEFAULT_OPTIONS:{
     [index : string]:any,

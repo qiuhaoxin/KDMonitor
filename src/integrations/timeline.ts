@@ -13,8 +13,8 @@ type TimeLineOptions ={
     console:true,
     dom:true,
     XMLHttpRequest:true,
-    History:true,
-    Fetch:true,
+    history:true,
+    fetch:true,
 }
 export default class TimeLine implements Integration{
     private static id:string="timeline";
@@ -25,14 +25,27 @@ export default class TimeLine implements Integration{
             console:true,
             dom:true,
             XMLHttpRequest:true,
-            Fetch:true,
-            History:true,
+            fetch:true,
+            history:true,
             ...options
         }
     }
     setupOnce(addGlobalEventProcessor: (callback: EventProcessor) => void, getCurrentHub: () => Hub): void {
+        console.log("set up timeline!!!");
         if(this._options.console){
             this._instrumentConsole();
+        }
+        if(this._options.fetch){
+            this._instrumentFetch();
+        }
+        if(this._options.XMLHttpRequest){
+            this._instrumentXHR();
+        }
+        if(this._options.history){
+            this._instrumentHistory();
+        }
+        if(this._options.dom){
+            this._instrumentDom();
         }
     }
     private _instrumentConsole(){
@@ -45,9 +58,27 @@ export default class TimeLine implements Integration{
     }
     private _instrumentDom(){
 
+        addInstrumentHandler({
+            callback:(...args)=>{
+                console.log("instrumentDom is ",args);
+                this._domTimeLine(args);
+            },
+            type:'dom',
+        })
+    }
+    private _domTimeLine(...args:any[]){
+        console.log("dom timeline args is ",args);
     }
     private _instrumentFetch(){
-
+        addInstrumentHandler({
+            callback:()=>{
+                this._fetchTimeLine();
+            },
+            type:'fetch',
+        })
+    }
+    private _fetchTimeLine(...args:any[]){
+        console.log("fetch time line is ",args);
     }
     private _instrumentHistory(){
 
