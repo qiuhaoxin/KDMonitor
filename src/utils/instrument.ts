@@ -4,8 +4,10 @@ export interface InstrumentHandler{
     callback:InstrumentCallback
 }
 
+import { argv } from 'process';
 import {WrappedFunction} from '../types/index';
 import { getGlobalObject } from './global';
+import {supportFetch,isInstanceOf} from './support';
 
 type InstrumentCallback=(data:any)=>void;
 type InstrumentHandlerType='error' | 'unhandledrejection' | 'dom' | 'console' | 'xhr' | 'fetch';
@@ -69,13 +71,72 @@ function instrumentType(type:InstrumentHandlerType):void{
         break;
     }
 }
-
+function getUrlFromFetch(...args:any[]=[]):string{
+    if(typeof args[0]==='string'){
+        return args[0];
+    }
+    if('Request' in global && isInstanceOf(args[0],Request)){
+        return args[0].url;
+    }
+    return '';
+}
+function getMethodFromFetch(...args:any[]=[]):string{
+    if('Request' in global && isInstanceOf(args[0],Request) && args[0].method){
+        return String(args[0].method).toUpperCase();
+    }
+    if(args[1] && args[1].method){
+        return String(args[1].method).toUpperCase();
+    }
+    return 'GET';
+}
 function instrumentXHR(){
+    if(!supportFetch())return false;
 
+    fill(global,'fetch',function(originCall:()=>void):()=>void{
+        return function(
+            ...args:any[]
+        ):void{
+            const handleData={
+                args,
+                fetchData:{
+                    url:getUrlFromFetch(args),
+                    method:getMethodFromFetch(args)
+                },
+                startTimestamp:Date.now(),
+            }
+            triggerHandlers('fetch',
+                handleData
+            )
+            return originCall.apply(global,args)
+            .then((response:Response)=>{
+                triggerHandlers(
+                    'fetch',
+                    {
+                        ...handleData,
+                        endTimestamp:Date.now(),
+                        response,
+                    }
+                )
+                return response;
+            })
+            .catch((error:Error)=>{
+                triggerHandlers(
+                    'fetch',
+                    {
+                        ...handleData,
+                        endTimeStamp:Date.now(),
+                        error,
+                    }
+                   
+                )
+                throw error;
+            })
+        }
+    })
 }
 
 function instrumentFetch(){
-    
+
 }
 
 function instrumentDom():void{
